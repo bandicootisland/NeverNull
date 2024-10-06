@@ -1,3 +1,10 @@
+# NeverNull - TLDR
+NeverNull contains methods, functions and patterns to eliminate null exceptions from C# code. The helper functions form a compact library, mostly static extension methods, that require only the addition of the function to an object. e.g Book.NvN() (where NvN =NeverNull, sell below).
+
+For NeverNull to work best, it requires a small programming philosphy change commitment - specifically: no nulls, ever!
+
+And then, in the words of Napolean Dynamite (Pedro actually) - all your dreams will come true.
+
 # NeverNull
 Methods, Functions and Patterns to eliminate nulls from C# code
 
@@ -9,11 +16,11 @@ The customer cannot be told to call back tomorrow. You have to code to protect f
 
 And I am not sure if compiler and source code 'squiggles' help. Yes, yes, the value could be null - thats the problem! It could be null. It will be null. If you work in the real world, with real applications, you know every value everywhere, at some point now or in the future, will be a null. If you deserialise from a source, and only the most basic of applications do not, then you have a data source you cannot control, and it will have nulls in it one day.
 
-This is not a rant about writing defensive code. I have no problem doing that - in fact NeverNull itself is a library of defense. This is about the status of Software Engineering in general. No field of endevour with the word engineering can just throw up its metaphorical hands and refuse to work, just because of a special value. It is a ridiculous proposition, one that cannot stand. As an industry we have to solve it. We cannot continue to blame someone for a decision decades ago. That is a cop out.
+This is not a rant about writing defensive code. I have no problem doing that - in fact NeverNull itself is a library of defense. This is about the status of Software Engineering in general. No field of endevour with the word engineering in its title can just throw up its metaphorical hands and refuse to work, just because of a special value. It is a ridiculous proposition, one that cannot stand. As an industry we have to solve it. We cannot continue to blame someone for a decision decades ago. That is a cop out.
 
 It is now a Trillion dollar cost, and is fixable by us, if not now, then at the very least from now on.
 
-Will NeverNull solve it? I am not sure I would be so bold as to say completely - but I have been using the ideas for years, and found it more than useful. It was the Crowd Strike massive fail that prompted me to document NeverNull. Yet again, a null reference point exception, which took down huge swathes of systems. Even after decades of trying the IT industry still cant solve the issue.
+Will NeverNull solve it? I am not sure I would be so bold as to say completely - but I have been using the ideas for years, and found it more than useful. It was the Crowd Strike massive fail that prompted me to document NeverNull. Yet again, a null reference point exception, which took down huge swathes of systems. Even after decades of trying the IT industry still seems unable to solve the issue.
 
 So - every little bit helps. Have a read, and if there is food for thought here, or any ideas you can use to rid us of the scourge of nulls, then have at it. 
 
@@ -33,7 +40,7 @@ But if I could paraphrase the memory issue, it would look like this:
 
 Book.0x00000000.FirstName
 
-Thats it! That is what apparently cannot be coped with, by decades of engineering. Yet a level out (prior to machine code) the compiler 'knows' that it is the Publisher object being referred to. And it 'knows' it has a First Name property. Otherwise your code will not compile. If you look at disassembly, you can see type names and lookup tables through-out.
+Thats it! That is what apparently cannot be coped with, by decades of engineering. Yet a level out (prior to machine code) the compiler 'knows' that it is the Publisher object being referred to. And it 'knows' it has a First Name property. Otherwise your code will not compile. If you look at the disassembly, you can see type names and lookup tables through-out.
 So the problem is with the '.' (dot) property accessor. Why cant it do more? But we are unlikely to ever get that change over the line, so lets solve it at code level.
 
 #The Nub - 2
@@ -54,9 +61,9 @@ public static T NvN<T>(this T t) where T: new()
     return new();
 }
 
-(*The actual function is mildly different in the library. It is also necessary to have a new constraint, discussed later.)
+(*The actual function is mildly different in the library, with some optimisations on the Create step. It is also necessary to have a 'new' constraint, discussed later.)
 
-That is all we need to do to stop the exception. Kind of like this (which will not compile of course):
+That is all we need to do to stop the exception. Ends up conceptually, as kind of like this (which will not compile of course):
 
 Book.(publisherexists ?? new Publisher).FirstName.
 
@@ -64,15 +71,16 @@ Book.(publisherexists ?? new Publisher).FirstName.
 # Memory Objections
 I can hear one objection already- that NvN creates objects that are in effect discards. Yes, I know: all solutions have to compromise. There is no get out of jail free card on this null monopoly board.
 So a couple of points:
-  You would have to write the defensive 'if null' check somewhere in your code. 
-  NvN() will create an object if it is null (to stop the error being thrown) If you are iterating through a large number of objects, with a significant number of null items, and you think the protection is a waste of memory, then dont do it! Simply write the check first:
+  You would have to write the defensive 'if null' check somewhere in your code. So that null validity check should exist anyway.
+  NvN() will create an object only if it is null (to stop the error being thrown). If you are iterating through a large number of objects, with a significant number of null items, and you think the protection is a waste of memory, then dont do it! Simply write the check first:
     if (Book!=null)
       if (Book.Publisher!=null)
         if (Book.Publisher.FirstName !=null)
            if (Book.Publisher.FirstName.Length>0)
-              //yay, we have a first name, just going to repeat all that for last name, and then concatenate the two. Also, middle name was requested by business...sheesh
+              //yay, we have a first name, just going to repeat all that for last name, and then concatenate the two. Also, middle name was just requested by business...so times 3
+  (Yes, I know I can short form it with null coalescing operators; the logic is the point)
   
-  or in linq:
+  or, within linq:
     foreach book in Books.Where(b=>b.Publisher!=null)
        etc.
 
